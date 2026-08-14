@@ -1,0 +1,21 @@
+# Dependencias
+node_modules/
+npm-debug.log*
+
+# Variables de entorno (contienen credenciales)
+.env
+.env.*
+
+# Builds
+dist/
+build/
+
+# Docker
+Dockerfile*
+
+# Sistema y editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

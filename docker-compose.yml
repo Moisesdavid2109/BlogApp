@@ -1,0 +1,62 @@
+name: blog-sencillo
+
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: blog-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-blog}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blog_password}
+      POSTGRES_DB: ${POSTGRES_DB:-blog}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - blog_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-blog} -d ${POSTGRES_DB:-blog}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: blog-backend
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      # Variables para la integración con PostgreSQL (Paso 3)
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-blog}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-blog_password}
+      DB_NAME: ${POSTGRES_DB:-blog}
+    ports:
+      - "3000:3000"
+    networks:
+      - blog_network
+    depends_on:
+      database:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # URL que ve el navegador para alcanzar la API (backend mapeado en 3000)
+        VITE_API_URL: http://localhost:3000/api
+    container_name: blog-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - blog_network
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+
+networks:
+  blog_network:
+    driver: bridge
