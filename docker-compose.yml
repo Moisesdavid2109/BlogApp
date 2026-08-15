@@ -24,8 +24,8 @@ services:
     container_name: blog-backend
     restart: unless-stopped
     environment:
+      NODE_ENV: production
       PORT: 3000
-      # Variables para la integración con PostgreSQL (Paso 3)
       DB_HOST: database
       DB_PORT: 5432
       DB_USER: ${POSTGRES_USER:-blog}
@@ -38,12 +38,21 @@ services:
     depends_on:
       database:
         condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   frontend:
     build:
       context: ./frontend
       args:
-        # URL que ve el navegador para alcanzar la API (backend mapeado en 3000)
         VITE_API_URL: http://localhost:3000/api
     container_name: blog-frontend
     restart: unless-stopped
@@ -52,7 +61,8 @@ services:
     networks:
       - blog_network
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:

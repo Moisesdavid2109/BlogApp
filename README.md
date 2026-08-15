@@ -17,11 +17,11 @@ Proyecto de parcial: un blog minimalista con arquitectura **multi-contenedor** u
 BlogWeb/
 ├── backend/               # API RESTful en Node.js + Express
 │   ├── src/
-│   │   ├── index.js       # Punto de entrada
-│   │   ├── app.js         # Configuración de Express (CORS, rutas, 404)
-│   │   ├── routes/        # Rutas de la API
-│   │   └── data/          # Almacenamiento en memoria (ficticio por ahora)
-│   ├── Dockerfile         # Imagen ligera node:20-alpine
+│   │   ├── index.js       # Punto de entrada (arranca y crea el esquema)
+│   │   ├── app.js         # Configuración de Express (CORS, rutas, /api/health)
+│   │   ├── db.js          # Pool de conexiones a PostgreSQL + esquema + seed
+│   │   └── routes/        # Rutas de la API (leer/crear posts)
+│   ├── Dockerfile         # Imagen ligera node:20-alpine (usuario no root)
 │   └── .env.example       # Variables de entorno de ejemplo
 ├── frontend/              # App React + Vite
 │   ├── src/               # Componentes (App.jsx, estilos)
@@ -95,7 +95,7 @@ curl http://localhost:3000/api/health
 
 | Método | Ruta            | Descripción                        |
 | ------ | --------------- | ---------------------------------- |
-| `GET`  | `/api/health`   | Estado del servicio                |
+| `GET`  | `/api/health`   | Estado del servicio **y de la BD** |
 | `GET`  | `/api/posts`    | Lista todas las publicaciones      |
 | `POST` | `/api/posts`    | Crea una publicación (`title`, `content`) |
 
@@ -105,7 +105,8 @@ curl http://localhost:3000/api/health
 2. **`backend`** expone la API REST en el puerto `3000`, dentro de una imagen `node:20-alpine` que ejecuta la app como usuario no privilegiado (`node`).
 3. **`database`** corre PostgreSQL 16 con un **volumen persistente** (`pgdata`) para que los datos sobrevivan a `docker compose down` o reinicios.
 4. Todos los servicios comparten la **red personalizada** `blog_network`, que los aísla del resto de redes de Docker.
-5. `depends_on` garantiza que el backend espere a que la base de datos esté **saludable** (`condition: service_healthy`) antes de arrancar.
+5. `depends_on` garantiza que el backend espere a que la base de datos esté **saludable** (`condition: service_healthy`) y que el frontend espere al backend saludable antes de levantarse.
+6. Al arrancar, el backend **crea la tabla `posts`** y, si está vacía, inserta dos publicaciones de ejemplo. Cada post creado desde la app se **persiste en PostgreSQL**.
 
 ## 🛠️ Comandos útiles
 
@@ -130,11 +131,13 @@ docker compose up --build
 
 - Las credenciales de PostgreSQL se leen desde el archivo `.env` de la raíz (con valores por defecto seguros si no existe).
 - `POSTGRES_PASSWORD` nunca debe versionarse: el archivo `.env` está excluido en `.gitignore`.
+- El `docker-compose.yml` inyecta las mismas credenciales (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`) tanto a la base de datos como al backend (variables `DB_*`).
 - En producción real, se recomienda usar secretos de Docker o un gestor como Vault.
 
 ## 📋 Estado del Proyecto / Siguientes pasos
 
-- [x] **Paso 1 — Backend**: API REST con Express, endpoints en memoria y `Dockerfile` optimizado.
+- [x] **Paso 1 — Backend**: API REST con Express, endpoints y `Dockerfile` optimizado.
 - [x] **Paso 2 — Frontend**: React + Vite con `Dockerfile` multi-stage (Vite → Nginx).
 - [x] **Paso 3 — Orquestación**: `docker-compose.yml` con frontend, backend y PostgreSQL persistente.
-- [ ] **Paso 4 — Base de datos**: conectar el backend a PostgreSQL (variables `DB_*` ya preparadas en `backend/.env.example` y en el compose).
+- [x] **Paso 4 — Base de datos**: backend conectado a PostgreSQL (`pg`), creación automática del esquema y persistencia de las publicaciones.
+- [ ] **Opcional — Mejoras**: autenticación, edición/borrado de posts, paginación.
