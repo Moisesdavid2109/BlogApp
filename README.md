@@ -74,7 +74,33 @@ docker compose up --build -d
 | Backend   | http://localhost:3000        |
 | Health    | http://localhost:3000/api/health |
 
-> El servicio `database` no expone puertos hacia el host (solo se accede vía red interna de Docker).
+> El servicio `database` expone el puerto `5432` al host **solo para desarrollo local** (`npm run dev`). En producción no es necesario publicarlo.
+
+## 💻 Desarrollo local (sin contenedores para backend/frontend)
+
+Para editar con recarga en caliente usando la misma base de datos en Docker:
+
+```bash
+# 0. (Opcional) Detén los contenedores que ocupan los puertos 3000 y 8080
+docker compose stop backend frontend
+
+# 1. Levanta solo la base de datos
+docker compose up database -d
+
+# 2. Backend — terminal 1
+cd backend
+npm install        # la primera vez
+npm run dev        # http://localhost:3000
+
+# 3. Frontend — terminal 2
+cd frontend
+npm install        # la primera vez
+npm run dev        # http://localhost:5173
+```
+
+- El backend lee sus credenciales desde `backend/.env` (creado con `DB_HOST=localhost`).
+- En dev, el frontend apunta a la API por defecto en `http://localhost:3000/api`.
+- Si prefieres Docker para todo, omite el paso 0 y usa `docker compose up --build`.
 
 ## 🔌 Prueba de la API
 

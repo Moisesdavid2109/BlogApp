@@ -25,9 +25,9 @@ async function seedIfEmpty() {
     `INSERT INTO posts (title, content) VALUES ($1, $2), ($3, $4)`,
     [
       "Bienvenido al Blog",
-      "Este es el primer post del blog sencillo, persistido en PostgreSQL.",
+      "Este es el **primer post** del blog, persistido en PostgreSQL.\n\nEscribe con Markdown:\n\n- **negrita** y _cursiva_\n- Listas de ideas\n- `código en línea`\n\n> Escribir también es pensar.",
       "Docker y Docker Compose",
-      "Frontend, backend y base de datos corren en contenedores orquestados con Docker Compose.",
+      "Frontend, backend y base de datos corren en **contenedores** orquestados:\n\n```yaml\nservices:\n  frontend:\n  backend:\n  database:\n```\n\nTodo persiste en un volumen de PostgreSQL.",
     ]
   );
 }
