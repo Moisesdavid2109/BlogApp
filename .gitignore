@@ -4,14 +4,13 @@ npm-debug.log*
 
 # Variables de entorno (contienen credenciales)
 .env
-.env.*
+.env.local
+# Permite versionar los archivos de ejemplo
+!.env.example
 
 # Builds
 dist/
 build/
-
-# Docker
-Dockerfile*
 
 # Sistema y editor
 .DS_Store

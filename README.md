@@ -14,7 +14,7 @@ Proyecto de parcial: un blog minimalista con arquitectura **multi-contenedor** u
 ## 📁 Estructura del Repositorio
 
 ```
-BlogWeb/
+BlogApp/
 ├── backend/               # API RESTful en Node.js + Express
 │   ├── src/
 │   │   ├── index.js       # Punto de entrada (arranca y crea el esquema)
@@ -44,7 +44,7 @@ BlogWeb/
 
 ```bash
 git clone <url-del-repositorio>
-cd BlogWeb
+cd BlogApp
 ```
 
 ### 2. Configurar variables de entorno (opcional)
@@ -53,6 +53,24 @@ cd BlogWeb
 cp .env.example .env
 # Edita .env con tus credenciales para PostgreSQL si deseas personalizarlas
 ```
+
+#### Variables de entorno disponibles
+
+| Variable | Servicio | Descripción | Valor por defecto |
+|----------|----------|-------------|-------------------|
+| `POSTGRES_USER` | database | Usuario de PostgreSQL | `blog` |
+| `POSTGRES_PASSWORD` | database | Contraseña de PostgreSQL | `blog_password` |
+| `POSTGRES_DB` | database | Nombre de la base de datos | `blog` |
+| `NODE_ENV` | backend | Modo de ejecución | `production` |
+| `PORT` | backend | Puerto de la API | `3000` |
+| `DB_HOST` | backend | Host de PostgreSQL | `database` |
+| `DB_PORT` | backend | Puerto de PostgreSQL | `5432` |
+| `DB_USER` | backend | Usuario de PostgreSQL | `blog` |
+| `DB_PASSWORD` | backend | Contraseña de PostgreSQL | `blog_password` |
+| `DB_NAME` | backend | Base de datos a conectar | `blog` |
+| `VITE_API_URL` | frontend (build) | URL base de la API para el frontend | `http://localhost:3000/api` |
+
+> **Nota:** Todas las variables tienen valores por defecto en `docker-compose.yml`. Solo necesitas crear el archivo `.env` si deseas personalizar las credenciales.
 
 ### 3. Construir y levantar los servicios
 
