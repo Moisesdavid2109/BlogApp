@@ -1,187 +1,143 @@
 # Blog Sencillo
 
-Proyecto de parcial: un blog minimalista con arquitectura **multi-contenedor** usando **Docker Compose**.
+Blog minimalista hecho como proyecto de parcial. Es una app de tres contenedores: un frontend en React, una API en Node/Express y PostgreSQL para guardar las publicaciones. Todo se orquesta con Docker Compose.
 
-## 🧱 Stack Tecnológico
+## Stack
 
-| Capa       | Tecnología                                      |
-| ---------- | ----------------------------------------------- |
-| Frontend   | React 18 + Vite 5 (servido con Nginx)           |
-| Backend    | Node.js 20 + Express 4 (API RESTful)            |
-| Base de Datos | PostgreSQL 16 (volumen persistente)          |
-| Orquestación | Docker Compose                               |
+- Frontend: React 18 + Vite, servido con Nginx
+- Backend: Node.js 20 + Express (API REST)
+- Base de datos: PostgreSQL 16 con volumen persistente
+- Docker Compose para levantar todo junto
 
-## 📁 Estructura del Repositorio
+## Estructura
 
 ```
-BlogApp/
-├── backend/               # API RESTful en Node.js + Express
+BlogWeb/
+├── backend/            # API RESTful en Node.js + Express
 │   ├── src/
-│   │   ├── index.js       # Punto de entrada (arranca y crea el esquema)
-│   │   ├── app.js         # Configuración de Express (CORS, rutas, /api/health)
-│   │   ├── db.js          # Pool de conexiones a PostgreSQL + esquema + seed
-│   │   └── routes/        # Rutas de la API (leer/crear posts)
-│   ├── Dockerfile         # Imagen ligera node:20-alpine (usuario no root)
-│   └── .env.example       # Variables de entorno de ejemplo
-├── frontend/              # App React + Vite
-│   ├── src/               # Componentes (App.jsx, estilos)
-│   ├── Dockerfile         # Multi-stage: Vite build → Nginx
-│   ├── nginx.conf         # Configuración de Nginx (SPA + cache)
-│   └── .env.example       # VITE_API_URL de ejemplo
-├── docker-compose.yml     # Orquestación de los 3 servicios
-├── .env.example           # Credenciales de PostgreSQL de ejemplo
+│   │   ├── index.js    # Punto de entrada
+│   │   ├── app.js      # Configuración de Express y rutas
+│   │   ├── db.js       # Conexión a Postgres, crea el esquema
+│   │   └── routes/     # Rutas de la API
+│   └── Dockerfile      # node:20-alpine
+├── frontend/           # App React + Vite
+│   ├── src/
+│   ├── Dockerfile      # Multi-stage: build con Vite → Nginx
+│   └── nginx.conf
+├── docker-compose.yml
+├── .env.example        # Ejemplo de credenciales de Postgres
 └── README.md
 ```
 
-## 🚀 Puesta en Marcha
+## Cómo levantar el proyecto
 
 ### Requisitos
 
-- [Docker Engine](https://docs.docker.com/engine/install/) y [Docker Compose](https://docs.docker.com/compose/install/) (v2+)
+- Docker y Docker Compose v2 o superior
 - Git
 
 ### 1. Clonar el repositorio
 
 ```bash
 git clone <url-del-repositorio>
-cd BlogApp
+cd BlogWeb
 ```
 
-### 2. Configurar variables de entorno (opcional)
+### 2. Variables de entorno (opcional)
+
+Todas las variables tienen valores por defecto en `docker-compose.yml`, así que técnicamente no hay que configurar nada. Si quieres cambiar usuario, contraseña o nombre de la base de datos:
 
 ```bash
 cp .env.example .env
-# Edita .env con tus credenciales para PostgreSQL si deseas personalizarlas
 ```
 
-#### Variables de entorno disponibles
+y edita los valores. Las únicas que docker-compose lee del `.env` son estas tres:
 
-| Variable | Servicio | Descripción | Valor por defecto |
-|----------|----------|-------------|-------------------|
-| `POSTGRES_USER` | database | Usuario de PostgreSQL | `blog` |
-| `POSTGRES_PASSWORD` | database | Contraseña de PostgreSQL | `blog_password` |
-| `POSTGRES_DB` | database | Nombre de la base de datos | `blog` |
-| `NODE_ENV` | backend | Modo de ejecución | `production` |
-| `PORT` | backend | Puerto de la API | `3000` |
-| `DB_HOST` | backend | Host de PostgreSQL | `database` |
-| `DB_PORT` | backend | Puerto de PostgreSQL | `5432` |
-| `DB_USER` | backend | Usuario de PostgreSQL | `blog` |
-| `DB_PASSWORD` | backend | Contraseña de PostgreSQL | `blog_password` |
-| `DB_NAME` | backend | Base de datos a conectar | `blog` |
-| `VITE_API_URL` | frontend (build) | URL base de la API para el frontend | `http://localhost:3000/api` |
+| Variable | Descripción | Default |
+|----------|-------------|---------|
+| `POSTGRES_USER` | Usuario de Postgres | `blog` |
+| `POSTGRES_PASSWORD` | Contraseña | `blog_password` |
+| `POSTGRES_DB` | Nombre de la BD | `blog` |
 
-> **Nota:** Todas las variables tienen valores por defecto en `docker-compose.yml`. Solo necesitas crear el archivo `.env` si deseas personalizar las credenciales.
+El resto (`NODE_ENV`, `PORT`, `DB_HOST`, etc.) están fijas en el compose. El backend recibe las credenciales automáticamente a través de las variables `DB_*`.
 
-### 3. Construir y levantar los servicios
+Ojo: si cambias las credenciales después de haber corrido la app una vez, hay que hacer `docker compose down -v` antes de volver a levantar, porque el volumen conserva el usuario viejo.
+
+También hay un `.env.example` dentro de `backend/` y `frontend/`, pero esos son solo para correr las cosas localmente sin Docker (se explica más abajo).
+
+### 3. Construir imágenes y levantar todo
 
 ```bash
 docker compose up --build
 ```
 
-Para ejecutarlo en segundo plano:
+o en segundo plano:
 
 ```bash
 docker compose up --build -d
 ```
 
-### 4. URLs de acceso
+La primera vez tarda un poco porque compila el frontend y descarga las imágenes. Compose espera a que Postgres pase su healthcheck antes de arrancar el backend, y el backend arranca creando la tabla `posts` e insertando dos posts de ejemplo si está vacía.
 
-| Servicio  | URL                          |
-| --------- | ---------------------------- |
-| Frontend  | http://localhost:8080        |
-| Backend   | http://localhost:3000        |
-| Health    | http://localhost:3000/api/health |
+### 4. Acceder a la app
 
-> El servicio `database` expone el puerto `5432` al host **solo para desarrollo local** (`npm run dev`). En producción no es necesario publicarlo.
+- Frontend: http://localhost:8080
+- API: http://localhost:3000
+- Health check: http://localhost:3000/api/health
 
-## 💻 Desarrollo local (sin contenedores para backend/frontend)
+El puerto 5432 de la base de datos también está publicado al host, pero es solo para probar el backend localmente con `npm run dev`. En producción sobraría.
 
-Para editar con recarga en caliente usando la misma base de datos en Docker:
+## Probar la API
 
 ```bash
-# 0. (Opcional) Detén los contenedores que ocupan los puertos 3000 y 8080
-docker compose stop backend frontend
-
-# 1. Levanta solo la base de datos
-docker compose up database -d
-
-# 2. Backend — terminal 1
-cd backend
-npm install        # la primera vez
-npm run dev        # http://localhost:3000
-
-# 3. Frontend — terminal 2
-cd frontend
-npm install        # la primera vez
-npm run dev        # http://localhost:5173
-```
-
-- El backend lee sus credenciales desde `backend/.env` (creado con `DB_HOST=localhost`).
-- En dev, el frontend apunta a la API por defecto en `http://localhost:3000/api`.
-- Si prefieres Docker para todo, omite el paso 0 y usa `docker compose up --build`.
-
-## 🔌 Prueba de la API
-
-```bash
-# Listar publicaciones
+# Listar posts
 curl http://localhost:3000/api/posts
 
-# Crear una publicación
+# Crear un post
 curl -X POST http://localhost:3000/api/posts \
   -H "Content-Type: application/json" \
   -d '{"title":"Mi primer post","content":"Hola desde la API"}'
-
-# Verificar estado del servicio
-curl http://localhost:3000/api/health
 ```
 
-### Endpoints disponibles
+Endpoints:
 
-| Método | Ruta            | Descripción                        |
-| ------ | --------------- | ---------------------------------- |
-| `GET`  | `/api/health`   | Estado del servicio **y de la BD** |
-| `GET`  | `/api/posts`    | Lista todas las publicaciones      |
-| `POST` | `/api/posts`    | Crea una publicación (`title`, `content`) |
+- `GET /api/health` — estado del servicio y de la conexión a la BD
+- `GET /api/posts` — lista todas las publicaciones
+- `POST /api/posts` — crea una publicación (recibe `title` y `content`)
 
-## 🐳 Cómo funciona la arquitectura
+## Correr sin Docker (solo la base de datos en Docker)
 
-1. **`frontend`** se compila en dos etapas: `node:20-alpine` construye los estáticos con Vite y `nginx:alpine` los sirve en el puerto `80` (mapeado al `8080` del host).
-2. **`backend`** expone la API REST en el puerto `3000`, dentro de una imagen `node:20-alpine` que ejecuta la app como usuario no privilegiado (`node`).
-3. **`database`** corre PostgreSQL 16 con un **volumen persistente** (`pgdata`) para que los datos sobrevivan a `docker compose down` o reinicios.
-4. Todos los servicios comparten la **red personalizada** `blog_network`, que los aísla del resto de redes de Docker.
-5. `depends_on` garantiza que el backend espere a que la base de datos esté **saludable** (`condition: service_healthy`) y que el frontend espere al backend saludable antes de levantarse.
-6. Al arrancar, el backend **crea la tabla `posts`** y, si está vacía, inserta dos publicaciones de ejemplo. Cada post creado desde la app se **persiste en PostgreSQL**.
-
-## 🛠️ Comandos útiles
+Útil para desarrollar con recarga en caliente:
 
 ```bash
-# Ver el estado de los servicios
-docker compose ps
+# Detener backend y frontend si están corriendo
+docker compose stop backend frontend
 
-# Ver los logs en tiempo real
-docker compose logs -f
+# Levantar solo la base de datos
+docker compose up database -d
 
-# Detener los servicios (conserva los datos de la BD)
-docker compose down
+# Terminal 1 - backend
+cd backend
+npm install
+npm run dev          # http://localhost:3000
 
-# Detener y eliminar volúmenes (BORRA los datos de la BD)
-docker compose down -v
-
-# Reconstruir imágenes tras cambios
-docker compose up --build
+# Terminal 2 - frontend
+cd frontend
+npm install
+npm run dev          # http://localhost:5173
 ```
 
-## 🔒 Gestión de credenciales
+El backend lee sus credenciales de `backend/.env` (copiar desde `backend/.env.example`, ya viene con `DB_HOST=localhost`). En dev el frontend apunta por defecto a `http://localhost:3000/api`.
 
-- Las credenciales de PostgreSQL se leen desde el archivo `.env` de la raíz (con valores por defecto seguros si no existe).
-- `POSTGRES_PASSWORD` nunca debe versionarse: el archivo `.env` está excluido en `.gitignore`.
-- El `docker-compose.yml` inyecta las mismas credenciales (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`) tanto a la base de datos como al backend (variables `DB_*`).
-- En producción real, se recomienda usar secretos de Docker o un gestor como Vault.
+## Comandos útiles
 
-## 📋 Estado del Proyecto / Siguientes pasos
+```bash
+docker compose ps          # estado de los servicios
+docker compose logs -f     # logs en tiempo real
+docker compose down        # detener (conserva los datos)
+docker compose down -v     # detener Y borrar los datos de la BD
+```
 
-- [x] **Paso 1 — Backend**: API REST con Express, endpoints y `Dockerfile` optimizado.
-- [x] **Paso 2 — Frontend**: React + Vite con `Dockerfile` multi-stage (Vite → Nginx).
-- [x] **Paso 3 — Orquestación**: `docker-compose.yml` con frontend, backend y PostgreSQL persistente.
-- [x] **Paso 4 — Base de datos**: backend conectado a PostgreSQL (`pg`), creación automática del esquema y persistencia de las publicaciones.
-- [ ] **Opcional — Mejoras**: autenticación, edición/borrado de posts, paginación.
+## Notas sobre credenciales
+
+La contraseña de Postgres va en el `.env` de la raíz, que está en `.gitignore`, así que no se sube al repo. En un entorno real lo correcto sería usar secrets de Docker o algo parecido, pero para este proyecto alcanza así.
